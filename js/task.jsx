@@ -11,17 +11,12 @@ const KEYS = {
 export default class Task extends React.Component {
   render() {
     const task = this.props.task
-    const parents = this.props.parents
-    const methods = _.omit(this.props, 'task', 'parents')
-
-    parents.push(task.id)
-
-    console.log('parents', parents)
+    const methods = _.omit(this.props, 'task')
 
     return (
       <div>
         <div
-          ref={(task) => { this.task = task }}
+          ref={(div) => { this.taskInput = div }}
           className='task-text'
           contentEditable
           suppressContentEditableWarning
@@ -30,30 +25,31 @@ export default class Task extends React.Component {
         >
           {task.text}
         </div>
-        <List
-          list={task.list}
-          parents={parents}
-          {...methods}
-        />
+        {this.props.list && this.props.list.children
+          ? (
+            <List
+              list={this.props.list}
+              {...methods}
+            />
+          ) : null
+        }
       </div>
     )
   }
 
   onKeyPress = (e) => {
-    if (e.keyCode === KEYS.enter) {
+    if (e.which === KEYS.enter) {
       console.log('enter')
       // Create new task
-      this.props.insertTask(this.props.id)
+      this.props.insertTask(this.props.task)
+
+      e.preventDefault()
     }
   }
 
   onInput = () => {
-    const elem = this.task
-    const value = $(elem).text()
-    const newTask = _.extend(this.props.task, {
-      text: value,
-    })
+    const value = $(this.taskInput).text()
 
-    this.props.updateTask(this.props.task, newTask)
+    this.props.updateTask(this.props.task.id, value)
   }
 }

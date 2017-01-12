@@ -2,24 +2,29 @@ import _ from 'underscore'
 import React from 'react'
 import ReactDOM from 'react-dom'
 import Task from './task.jsx'
+import Utils from './utils.js'
+
+let DATA = Utils.getData()
 
 class App extends React.Component {
   constructor(props) {
     super(props)
-
-    this.state = {
-      data: this.createTask()
-    }
   }
 
   render() {
-    const data = this.state.data
+    const id = 1
+    const task = _.findWhere(DATA.tasks, {
+      id: id
+    })
+    const list = _.findWhere(DATA.lists, {
+      taskId: id
+    })
 
     return (
       <div>
         <Task
-          task={data}
-          parents={[]}
+          task={task}
+          list={list}
           insertTask={this.insertTask}
           updateTask={this.updateTask}
         />
@@ -27,41 +32,42 @@ class App extends React.Component {
     )
   }
 
-  createTask() {
-    return {
+  createTask(parentId, after) {
+    const newTask = {
       id: _.uniqueId(),
-      text: 'parent',
-      list: [
-        {
-          id: _.uniqueId(),
-          text: 'child',
-          list: [
-            {
-              id: _.uniqueId(),
-              text: 'child1',
-              list: [
-                {
-                  id: _.uniqueId(),
-                  text: 'child2',
-                  list: []
-                }
-              ]
-            }
-          ]
-        }
-      ]
+      parentId: parentId,
+      text: ''
     }
+    const list = _.findWhere(DATA.lists, {
+      taskId: parentId
+    })
+    const index = _.indexOf(DATA.lists, list)
+    const listChildren = list.children
+    const newTaskIndex = listChildren.indexOf(after)
+
+    DATA.tasks.push(newTask)
+    listChildren.splice(newTaskIndex + 1, 0, newTask.id)
+
+    DATA.lists[index].children = listChildren
+    console.log('createdTask', DATA)
   }
 
-  insertTask = (id) => {
-    console.log('insert task')
+  insertTask = (task) => {
+    const newTask = this.createTask(task.parentId, task.id)
+    console.log('insertedTask', DATA)
   }
 
-  updateTask = (task, newTask) => {
-    const data = this.state.data
-    const oldTask = _.findWhere(data, task)
+  updateTask = (id, value) => {
+    const task = _.findWhere(DATA.tasks, {
+      id: id
+    })
+    const index = _.indexOf(DATA.tasks, task)
 
-    console.log('udpate task', oldTask)
+    DATA.tasks[index] = _.extend({}, task, {
+      text: value
+    })
+
+    console.log('updatedTask', DATA)
   }
 }
 
