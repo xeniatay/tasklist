@@ -1,0 +1,17 @@
+body {
+  margin: 0 auto;
+  padding: 20px;
+  max-width: 1200px;
+  font-size: 14px;
+  font-family: "Trebuchet MS", "Helvetica", "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.8;
+  // background: black;
+  // color: #EFEFEF;
+}
+
+.task-text {
+  border: 1px solid #EFEFEF;
+  width: 100%;
+  height: 2em;
+  line-height: 2em;
+}
