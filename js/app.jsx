@@ -2,72 +2,79 @@ import _ from 'underscore'
 import React from 'react'
 import ReactDOM from 'react-dom'
 import Task from './task.jsx'
-import Utils from './utils.js'
+import Store from './store.js'
 
-let DATA = Utils.getData()
+const ROOT_ID = _.uniqueId()
 
 class App extends React.Component {
   constructor(props) {
     super(props)
+
+    this.store = new Store(ROOT_ID)
+
+    const data = this.store.getData()
+    const task = _.findWhere(data.tasks, {
+      parentId: ROOT_ID
+    })
+
+    this.state = {
+      data,
+      focus: task.id
+    }
   }
 
   render() {
-    const id = 1
-    const task = _.findWhere(DATA.tasks, {
-      id: id
-    })
-    const list = _.findWhere(DATA.lists, {
-      taskId: id
+    const list = _.findWhere(this.state.data.lists, {
+      taskId: ROOT_ID
     })
 
     return (
       <div>
         <Task
-          task={task}
           list={list}
+          data={this.state.data}
+          focus={this.state.focus}
           insertTask={this.insertTask}
           updateTask={this.updateTask}
+          indentTask={this.indentTask}
+          reverseIndentTask={this.reverseIndentTask}
         />
       </div>
     )
   }
 
-  createTask(parentId, after) {
-    const newTask = {
-      id: _.uniqueId(),
-      parentId: parentId,
-      text: ''
-    }
-    const list = _.findWhere(DATA.lists, {
-      taskId: parentId
-    })
-    const index = _.indexOf(DATA.lists, list)
-    const listChildren = list.children
-    const newTaskIndex = listChildren.indexOf(after)
-
-    DATA.tasks.push(newTask)
-    listChildren.splice(newTaskIndex + 1, 0, newTask.id)
-
-    DATA.lists[index].children = listChildren
-    console.log('createdTask', DATA)
-  }
-
   insertTask = (task) => {
-    const newTask = this.createTask(task.parentId, task.id)
-    console.log('insertedTask', DATA)
+    const newTaskId = this.store.insertTask(task)
+
+    this.focusTask(newTaskId)
+    this.updateData()
   }
 
   updateTask = (id, value) => {
-    const task = _.findWhere(DATA.tasks, {
-      id: id
-    })
-    const index = _.indexOf(DATA.tasks, task)
+    this.store.updateTask(id, value)
+    this.updateData()
+  }
 
-    DATA.tasks[index] = _.extend({}, task, {
-      text: value
-    })
+  indentTask = (task) => {
+    this.store.indentTask(task)
+    this.updateData()
+  }
 
-    console.log('updatedTask', DATA)
+  reverseIndentTask = (task) => {
+    this.store.reverseIndentTask(task)
+    this.updateData()
+  }
+
+  focusTask(id) {
+    this.setState({
+      focus: id
+    })
+  }
+
+  updateData() {
+    this.setState({
+      data: this.store.getData()
+    })
   }
 }
 

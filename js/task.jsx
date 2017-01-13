@@ -6,44 +6,111 @@ import List from './list.jsx'
 
 const KEYS = {
   enter: 13,
+  tab: 9,
+  shift: 16,
+  shiftTab: 84,
+  downArrow: 40,
+  upArrow: 38,
+  backspace: 8,
+  escape: 27,
 }
 
 export default class Task extends React.Component {
-  render() {
-    const task = this.props.task
-    const methods = _.omit(this.props, 'task')
+  componentDidMount() {
+    this.focusTask()
+  }
 
+  componentDidUpdate() {
+    this.focusTask()
+  }
+
+  focusTask() {
+    const taskId = this.props.task && this.props.task.id
+
+    if (this.props.focus === taskId) {
+      $(this.taskInput).focus()
+    }
+  }
+
+  render() {
     return (
-      <div>
-        <div
-          ref={(div) => { this.taskInput = div }}
-          className='task-text'
-          contentEditable
-          suppressContentEditableWarning
-          onKeyPress={this.onKeyPress}
-          onInput={this.onInput}
-        >
-          {task.text}
-        </div>
-        {this.props.list && this.props.list.children
-          ? (
-            <List
-              list={this.props.list}
-              {...methods}
-            />
-          ) : null
-        }
+      <div className='task'>
+        {this.renderTask()}
+        {this.renderList()}
       </div>
     )
   }
 
-  onKeyPress = (e) => {
-    if (e.which === KEYS.enter) {
-      console.log('enter')
-      // Create new task
-      this.props.insertTask(this.props.task)
+  renderTask() {
+    const task = this.props.task
 
-      e.preventDefault()
+    return task
+      ? (
+        <div
+          ref={(div) => { this.taskInput = div }}
+          className='task-input'
+          data-id={task.id}
+          contentEditable
+          suppressContentEditableWarning
+          onKeyDown={this.onKeyDown}
+          onInput={this.onInput}
+        >
+          {task.text}
+        </div>
+      ) : null
+  }
+
+  renderList() {
+    const list = this.props.list
+    const props = _.omit(this.props, 'task')
+
+    return list && list.children
+      ? (
+        <List
+          {...props}
+        />
+      ) : null
+  }
+
+  onKeyDown = (e) => {
+    switch (e.which) {
+      case KEYS.enter:
+        this.props.insertTask(this.props.task)
+        e.preventDefault()
+        break
+
+      case KEYS.tab:
+        this.props.indentTask(this.props.task)
+        e.preventDefault()
+        break
+
+      case KEYS.shiftTab:
+        console.log('shifttab')
+        this.props.reverseIndentTask(this.props.task)
+        e.preventDefault()
+        break
+
+      case KEYS.downArrow:
+        this.props.navigateTask()
+        break
+
+      case KEYS.upArrow:
+        this.props.navigateTask()
+        break
+
+      case KEYS.backspace:
+        const value = $(this.taskInput).text()
+
+        if (_.isEmpty(value)) {
+          this.props.deleteTask(this.props.task)
+        }
+        break
+
+      case KEYS.escape:
+        break
+
+      default:
+        break
     }
   }
 
@@ -53,3 +120,6 @@ export default class Task extends React.Component {
     this.props.updateTask(this.props.task.id, value)
   }
 }
+
+// todo defualtprops
+// list props
