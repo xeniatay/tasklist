@@ -2,7 +2,7 @@ import _ from 'underscore'
 import React from 'react'
 import ReactDOM from 'react-dom'
 import Task from './task.jsx'
-import Store from './store.js'
+import Actions from './actions.js'
 
 const ROOT_ID = _.uniqueId()
 
@@ -10,7 +10,7 @@ class App extends React.Component {
   constructor(props) {
     super(props)
 
-    this.store = new Store(ROOT_ID)
+    this.store = new Actions(ROOT_ID)
 
     const data = this.store.getData()
     const task = _.findWhere(data.tasks, {
@@ -29,7 +29,7 @@ class App extends React.Component {
     })
 
     return (
-      <div>
+      <div className='app'>
         <Task
           list={list}
           data={this.state.data}
@@ -55,6 +55,7 @@ class App extends React.Component {
   updateTask = (id, value) => {
     this.store.updateTask(id, value)
     this.updateData()
+    this.focusTask(id)
   }
 
   indentTask = (task) => {

@@ -9,6 +9,12 @@ body {
   // color: #EFEFEF;
 }
 
+.app {
+  padding: 20px 20px 20px 0;
+  min-height: 560px;
+  box-shadow: 0px 0px 9px rgba(0, 0, 0, 0.2);
+}
+
 .task {
   .task-input {
     width: 100%;
