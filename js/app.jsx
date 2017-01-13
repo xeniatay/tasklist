@@ -38,6 +38,8 @@ class App extends React.Component {
           updateTask={this.updateTask}
           indentTask={this.indentTask}
           reverseIndentTask={this.reverseIndentTask}
+          navigateTask={this.navigateTask}
+          deleteTask={this.deleteTask}
         />
       </div>
     )
@@ -57,11 +59,25 @@ class App extends React.Component {
 
   indentTask = (task) => {
     this.store.indentTask(task)
+    this.focusTask(task.id)
     this.updateData()
   }
 
   reverseIndentTask = (task) => {
     this.store.reverseIndentTask(task)
+    this.updateData()
+  }
+
+  navigateTask = (task) => {
+    // todo
+    // this.store.reverseIndentTask(task)
+    // this.focusTask()
+  }
+
+  deleteTask = (task) => {
+    //todo
+    // this.store.deleteTask(task)
+    // this.focusTask()
     this.updateData()
   }
 

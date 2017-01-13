@@ -92,6 +92,19 @@ export default class Store {
     console.log('indent task', this.lists, this.tasks)
   }
 
+  navigateTask(task, direction) {
+    // get direction
+    // find task id of prev/next in list
+    // if first/last item, find parent
+      // if last item, find sibling of parent
+  }
+
+  deleteTask(task) {
+    // splice item
+    // return prev index in list for focus
+    // else return parent for focus
+  }
+
   getListById(id) {
     return _.findWhere(this.lists, {
       taskId: id
