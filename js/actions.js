@@ -2,10 +2,11 @@ import _ from 'underscore'
 
 export default class Store {
   constructor(rootId) {
+    const rootTask = this.createTask(null, rootId)
     const seedTask = this.createTask(rootId)
 
-    // Root list is a special case where the the task list contains itself as a task
-    this.tasks = [seedTask]
+    this.rootId = rootId
+    this.tasks = [rootTask, seedTask]
     this.lists = [ this.createList(rootId, [seedTask.id]) ]
   }
 
@@ -32,11 +33,12 @@ export default class Store {
   /**
    * Create new task
    * @param {number} Parent task id
+   * @param {number} (Optional) Task id, only used to create root task
    * @return {object} Task
    */
-  createTask(parentId) {
+  createTask(parentId, id = null) {
     return {
-      id: _.uniqueId(),
+      id: id || _.uniqueId(),
       parentId: parentId,
       text: ''
     }
@@ -77,9 +79,7 @@ export default class Store {
    * @return {void}
    */
   updateTask(id, value) {
-    const task = _.findWhere(this.tasks, {
-      id: id
-    })
+    const task = this.getTask(id)
 
     _.extend(task, {
       text: value
@@ -122,29 +122,128 @@ export default class Store {
    * @return {void}
    */
   reverseIndentTask(task) {
-    const oldListChildren = this.getListChildren(task.parentId)
-    const oldListIndex = oldList.indexOf(task.id)
+    const parent = this.getTask(task.parentId)
 
+    if (task.parentId !== this.rootId) {
+      this.spliceFromList(task)
+      task.parentId = parent.parentId
+      this.spliceToList(task, parent.id, parent.parentId)
+    }
   }
 
-  navigateTask(task, direction) {
-    // get direction
-    // find task id of prev/next in list
-    // if first/last item, find parent
-      // if last item, find sibling of parent
+  /**
+   * Return ID of the previous task in the visual hierarchy
+   * @param {object} Current task
+   * @return {number} ID of previous task
+   */
+  getPrevTask(task) {
+    const parentList = this.getListChildren(task.parentId)
+    const prevIndex = parentList.indexOf(task.id) - 1
+    let focusId = task.id
+
+    if (prevIndex >= 0) {
+      const prevTaskId = parentList[prevIndex]
+      const prevList = this.getListChildren(prevTaskId)
+
+      // Previous task has children, so we recurse through the children
+      // to get the immediate previous visual sibling
+      if (prevList.length) {
+        focusId = this.getPrevVisualSibling(prevTaskId)
+
+      // Previous task has no children
+      } else {
+        focusId = prevTaskId
+      }
+
+    // There is no previous task because current task is index === 0
+    } else {
+      focusId = task.parentId
+    }
+
+    return focusId
   }
 
-  deleteTask(task) {
-    // splice item
-    // return prev index in list for focus
-    // else return parent for focus
+  /**
+   * Return ID of the previous visual sibling (aka leaf child)
+   * @param {object} Current task id
+   * @return {number} ID of previous visual sibling
+   */
+  getPrevVisualSibling(id) {
+    const list = this.getListChildren(id)
+    const lastTask = _.last(list)
+
+    // If current list has children, recurse until we find a task with no children
+    if (lastTask) {
+      return this.getPrevVisualSibling(lastTask)
+    } else {
+      return id
+    }
   }
 
-  // getList(id) {
-  //   return _.findWhere(this.lists, {
-  //     taskId: id
-  //   })
-  // }
+  /**
+   * Return ID of the next task in the visual hierarchy
+   * @param {object} Current task
+   * @return {number} ID of next task
+   */
+  getNextTask(task) {
+    const list = this.getListChildren(task.id)
+    let focusId = task.id
+
+    // If a list of immediate children exists, get the first child
+    if (list.length) {
+      focusId = _.first(list)
+
+    // Get the next task based off the parent list
+    } else {
+      const parentList = this.getListChildren(task.parentId)
+      const isNotRoot = task.parentId !== this.rootId
+
+      // This is the last task in parentList, so we recurse through
+      // the ancestor lists to find the next visual sibling
+      if (_.last(parentList) === task.id && isNotRoot) {
+        focusId = this.getNextVisualSibling(task)
+
+      // Get the next sibling in the parentList
+      } else {
+        focusId = parentList[this.getListIndexOf(task) + 1]
+      }
+    }
+
+    return focusId
+  }
+
+  /**
+   * Return ID of the next visual sibling
+   * We want to get the first child of the first immediate parent that has a list
+   * @param {object} Current task id
+   * @return {number} ID of next visual sibling
+   */
+  getNextVisualSibling(task, prevTaskId) {
+    if (task) {
+      const list = this.getListChildren(task.id)
+      const nextIndex = list.indexOf(prevTaskId) + 1
+
+      // List contains a valid nextTask
+      if (list.length && list.length > nextIndex) {
+        return list[nextIndex]
+
+      // Recurse through parent to look for a list with a valid next task
+      } else {
+        return this.getNextVisualSibling(this.getTask(task.parentId), task.id)
+      }
+    }
+  }
+
+  /**
+   * Get task by id
+   * @param {number} Task Id
+   * @return {object} Task
+   */
+  getTask(id) {
+    return _.findWhere(this.tasks, {
+      id: id
+    }) || null
+  }
 
   /**
    * Get index of task in a task list
@@ -167,7 +266,7 @@ export default class Store {
       taskId: id
     })
 
-    if (!list) {
+    if (_.isUndefined(list) && id) {
       list = this.createList(id)
       this.lists.push(list)
     }
@@ -176,16 +275,16 @@ export default class Store {
   }
 
   /**
-   * Insert a task into its parent's task list
-   * If there is {appendTo}, insert task after the {appendTo}
-   * Else, insert the task to the end of the task list
+   * Insert a task into another task list
    * @param {object} Task to be inserted
    * @param {object} (Optional) Id of task that the new task will be inserted after
                      If no Id provided, new task is simply appended to the list
+   * @param {object} (Optional) ParentId of list that the new task will be inserted into
+                     If no ParentId provided, new task is inserted into its direct parent's list
    * @return {void}
    */
-  spliceToList(task, appendTo) {
-    const listChildren = this.getListChildren(task.parentId)
+  spliceToList(task, appendTo, listParentId) {
+    const listChildren = this.getListChildren(listParentId || task.parentId)
 
     if (appendTo) {
       const taskIndex = listChildren.indexOf(appendTo) + 1

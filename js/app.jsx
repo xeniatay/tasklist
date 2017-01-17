@@ -1,6 +1,7 @@
 import _ from 'underscore'
 import React from 'react'
 import ReactDOM from 'react-dom'
+import Constants from './constants.js'
 import Task from './task.jsx'
 import Actions from './actions.js'
 
@@ -10,9 +11,9 @@ class App extends React.Component {
   constructor(props) {
     super(props)
 
-    this.store = new Actions(ROOT_ID)
+    this.actions = new Actions(ROOT_ID)
 
-    const data = this.store.getData()
+    const data = this.actions.getData()
     const task = _.findWhere(data.tasks, {
       parentId: ROOT_ID
     })
@@ -30,6 +31,8 @@ class App extends React.Component {
 
     return (
       <div className='app'>
+        <button type='button' onClick={this.reset}>Reset Data</button>
+        <button type='button' onClick={this.toggleDebug}>Debug</button>
         <Task
           list={list}
           data={this.state.data}
@@ -46,40 +49,39 @@ class App extends React.Component {
   }
 
   insertTask = (task) => {
-    const newTaskId = this.store.insertTask(task)
+    const newTaskId = this.actions.insertTask(task)
 
     this.focusTask(newTaskId)
     this.updateData()
   }
 
   updateTask = (id, value) => {
-    this.store.updateTask(id, value)
+    this.actions.updateTask(id, value)
     this.updateData()
     this.focusTask(id)
   }
 
   indentTask = (task) => {
-    this.store.indentTask(task)
+    this.actions.indentTask(task)
     this.focusTask(task.id)
     this.updateData()
   }
 
   reverseIndentTask = (task) => {
-    this.store.reverseIndentTask(task)
+    this.actions.reverseIndentTask(task)
     this.updateData()
   }
 
-  navigateTask = (task) => {
-    // todo
-    // this.store.reverseIndentTask(task)
-    // this.focusTask()
-  }
+  navigateTask = (task, dir) => {
+    let id
 
-  deleteTask = (task) => {
-    //todo
-    // this.store.deleteTask(task)
-    // this.focusTask()
-    this.updateData()
+    if (dir === Constants.DIRECTIONS.up) {
+      id = this.actions.getPrevTask(task)
+    } else if (dir === Constants.DIRECTIONS.down) {
+      id = this.actions.getNextTask(task)
+    }
+
+    this.focusTask(id)
   }
 
   focusTask(id) {
@@ -90,8 +92,18 @@ class App extends React.Component {
 
   updateData() {
     this.setState({
-      data: this.store.getData()
+      data: this.actions.getData()
     })
+  }
+
+  reset() {
+    localStorage.setItem('data', '')
+  }
+
+  toggleDebug() {
+    let debug = localStorage.getItem('debug') && debug === 'true'
+
+    localStorage.setItem('debug', !!!debug)
   }
 }
 

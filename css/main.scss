@@ -23,7 +23,8 @@ body {
     outline: 0;
 
     &:before {
-      content: '•';
+      // content: '•';
+      content: attr(data-id);
       display: inline;
       margin-right: 0.5em;
       margin-left: -1em;

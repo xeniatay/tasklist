@@ -2,18 +2,8 @@ import $ from 'jquery'
 import _ from 'underscore'
 import React from 'react'
 import ReactDOM from 'react-dom'
+import Constants from './constants.js'
 import List from './list.jsx'
-
-const KEYS = {
-  enter: 13,
-  tab: 9,
-  shift: 16,
-  shiftTab: 84,
-  downArrow: 40,
-  upArrow: 38,
-  backspace: 8,
-  escape: 27,
-}
 
 export default class Task extends React.Component {
   componentDidMount() {
@@ -74,39 +64,32 @@ export default class Task extends React.Component {
 
   onKeyDown = (e) => {
     switch (e.which) {
-      case KEYS.enter:
+      case Constants.KEYS.enter:
         this.props.insertTask(this.props.task)
         e.preventDefault()
         break
 
-      case KEYS.tab:
-        this.props.indentTask(this.props.task)
-        e.preventDefault()
-        break
-
-      case KEYS.shiftTab:
-        console.log('shifttab')
-        this.props.reverseIndentTask(this.props.task)
-        e.preventDefault()
-        break
-
-      case KEYS.downArrow:
-        this.props.navigateTask()
-        break
-
-      case KEYS.upArrow:
-        this.props.navigateTask()
-        break
-
-      case KEYS.backspace:
-        const value = $(this.taskInput).text()
-
-        if (_.isEmpty(value)) {
-          this.props.deleteTask(this.props.task)
+      case Constants.KEYS.tab:
+        if (e.shiftKey) {
+          this.props.reverseIndentTask(this.props.task)
+        } else {
+          this.props.indentTask(this.props.task)
         }
+
+        e.preventDefault()
         break
 
-      case KEYS.escape:
+      case Constants.KEYS.downArrow:
+        this.props.navigateTask(this.props.task, Constants.DIRECTIONS.down)
+        e.preventDefault()
+        break
+
+      case Constants.KEYS.upArrow:
+        this.props.navigateTask(this.props.task, Constants.DIRECTIONS.up)
+        e.preventDefault()
+        break
+
+      case Constants.KEYS.escape:
         break
 
       default:
