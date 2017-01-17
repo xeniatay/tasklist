@@ -56,11 +56,11 @@ To run locally:
 - List.jsx (`<List>`) renders:
     + All the `<Task>`s in a given list
 
-### Data: js/store.js, js/actions.js, LocalStorage
+### Data: `Store`, `Actions`, LocalStorage
 
 - Tasklist data is stored and read from the browser's LocalStorage
-- Store provides methods to read from, write to and reset this data
-- Actions contain the logic methods for the functionality of the app
+- `Store` provides methods to read from, write to and reset this data
+- `Actions` contain the logic methods for the functionality of the app
     - Each logic method has meticulous comments documenting its use case and parameters
 
 ## Future Improvements
