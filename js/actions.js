@@ -1,29 +1,15 @@
 import _ from 'underscore'
+import uuidV1 from 'uuid/v1'
+import Store from './store.js'
 
-export default class Store {
-  constructor(rootId) {
-    const rootTask = this.createTask(null, rootId)
-    const seedTask = this.createTask(rootId)
-
-    this.rootId = rootId
-    this.tasks = [rootTask, seedTask]
-    this.lists = [ this.createList(rootId, [seedTask.id]) ]
-  }
-
-  getData() {
-    return {
-      lists: this.lists,
-      tasks: this.tasks
-    }
-  }
-
+export default class Actions {
   /**
    * Create new task list
    * @param {number} Task id
    * @param {array} Children in task list, defaults to []
    * @return {object} Task list
    */
-  createList(id, children = []) {
+  static createList(id, children = []) {
     return {
       taskId: id,
       children: children
@@ -36,9 +22,10 @@ export default class Store {
    * @param {number} (Optional) Task id, only used to create root task
    * @return {object} Task
    */
-  createTask(parentId, id = null) {
+  static createTask(parentId, id = null) {
     return {
-      id: id || _.uniqueId(),
+      // id: id || _.uniqueId(),
+      id: id || uuidV1(),
       parentId: parentId,
       text: ''
     }
@@ -49,8 +36,10 @@ export default class Store {
    * @param {object} Task to be added
    * @return {void}
    */
-  addTask(newTask) {
-    this.tasks.push(newTask)
+  static addTask(newTask) {
+    const tasks = Store.getData('tasks')
+    tasks.push(newTask)
+    Store.update('tasks', tasks)
   }
 
   /**
@@ -60,13 +49,13 @@ export default class Store {
                      The new task will be inserted after this task.
    * @return {number} Id of new task
    */
-  insertTask(appendTo) {
+  static insertTask(appendTo) {
     const newTask = this.createTask(appendTo.parentId)
 
     this.addTask(newTask)
     this.spliceToList(newTask, appendTo.id)
 
-    console.log('insertTask', this.lists, this.tasks, newTask)
+    console.log('insertTask', Store.lists, Store.tasks, newTask)
 
     return newTask.id
   }
@@ -78,12 +67,14 @@ export default class Store {
    * @param {object} Id of task that the new task will be inserted after
    * @return {void}
    */
-  updateTask(id, value) {
-    const task = this.getTask(id)
-
-    _.extend(task, {
-      text: value
+  static updateTask(id, value) {
+    const tasks = Store.getData('tasks')
+    const index = _.findIndex(tasks, {
+      id: id
     })
+
+    tasks[index].text = value
+    Store.update('tasks', tasks)
   }
 
   /**
@@ -93,7 +84,7 @@ export default class Store {
    * @param {object} Task to be indented
    * @return {void}
    */
-  indentTask(task) {
+  static indentTask(task) {
     const oldListChildren = this.getListChildren(task.parentId)
 
     // There is no previous sibling task
@@ -108,11 +99,11 @@ export default class Store {
       this.spliceFromList(task)
 
       // Update task to new parent id and insert it into new parent's list
-      task.parentId = newParentId
+      task = this.setParentId(task, newParentId)
       this.spliceToList(task)
     }
 
-    console.log('indent task', this.lists, this.tasks)
+    console.log('indent task', Store.lists, Store.tasks)
   }
 
   /**
@@ -121,12 +112,12 @@ export default class Store {
    * @param {object} Task to be reverse indented
    * @return {void}
    */
-  reverseIndentTask(task) {
+  static reverseIndentTask(task) {
     const parent = this.getTask(task.parentId)
 
-    if (task.parentId !== this.rootId) {
+    if (parent && task.parentId !== Store.rootId) {
       this.spliceFromList(task)
-      task.parentId = parent.parentId
+      task = this.setParentId(task, parent.parentId)
       this.spliceToList(task, parent.id, parent.parentId)
     }
   }
@@ -136,7 +127,7 @@ export default class Store {
    * @param {object} Current task
    * @return {number} ID of previous task
    */
-  getPrevTask(task) {
+  static getPrevTask(task) {
     const parentList = this.getListChildren(task.parentId)
     const prevIndex = parentList.indexOf(task.id) - 1
     let focusId = task.id
@@ -168,7 +159,7 @@ export default class Store {
    * @param {object} Current task id
    * @return {number} ID of previous visual sibling
    */
-  getPrevVisualSibling(id) {
+  static getPrevVisualSibling(id) {
     const list = this.getListChildren(id)
     const lastTask = _.last(list)
 
@@ -185,7 +176,7 @@ export default class Store {
    * @param {object} Current task
    * @return {number} ID of next task
    */
-  getNextTask(task) {
+  static getNextTask(task) {
     const list = this.getListChildren(task.id)
     let focusId = task.id
 
@@ -196,7 +187,7 @@ export default class Store {
     // Get the next task based off the parent list
     } else {
       const parentList = this.getListChildren(task.parentId)
-      const isNotRoot = task.parentId !== this.rootId
+      const isNotRoot = task.parentId !== Store.rootId
 
       // This is the last task in parentList, so we recurse through
       // the ancestor lists to find the next visual sibling
@@ -218,7 +209,7 @@ export default class Store {
    * @param {object} Current task id
    * @return {number} ID of next visual sibling
    */
-  getNextVisualSibling(task, prevTaskId) {
+  static getNextVisualSibling(task, prevTaskId) {
     if (task) {
       const list = this.getListChildren(task.id)
       const nextIndex = list.indexOf(prevTaskId) + 1
@@ -239,10 +230,31 @@ export default class Store {
    * @param {number} Task Id
    * @return {object} Task
    */
-  getTask(id) {
-    return _.findWhere(this.tasks, {
+  static getTask(id) {
+    const tasks = Store.getData('tasks')
+
+    return _.findWhere(tasks, {
       id: id
     }) || null
+  }
+
+  /**
+   * Set task parentId
+   * @param {number} Task
+   * @return {void}
+   */
+  static setParentId(task, parentId) {
+    const tasks = Store.getData('tasks')
+    const index = _.findIndex(tasks, {
+      id: task.id
+    })
+
+    tasks[index].parentId = parentId
+    Store.update('tasks', tasks)
+
+    console.log('parentid', tasks[index], parentId)
+
+    return tasks[index]
   }
 
   /**
@@ -250,7 +262,7 @@ export default class Store {
    * @param {object} Task
    * @return {number} Index of task
    */
-  getListIndexOf(task) {
+  static getListIndexOf(task) {
     const listChildren = this.getListChildren(task.parentId)
 
     return listChildren.indexOf(task.id)
@@ -261,17 +273,37 @@ export default class Store {
    * @param {number} Task id
    * @return {array} Task list
    */
-  getListChildren(id) {
-    let list = _.findWhere(this.lists, {
+  static getListChildren(id) {
+    const lists = Store.getData('lists')
+    let list = _.findWhere(lists, {
       taskId: id
     })
 
     if (_.isUndefined(list) && id) {
       list = this.createList(id)
-      this.lists.push(list)
+      lists.push(list)
+      Store.update('lists', lists)
     }
 
-    return list.children
+    return list.children || []
+  }
+
+  /**
+   * Set task list
+   * @param {number} Task id of list
+   * @param {array} New children
+   * @return {void}
+   */
+  static setListChildren(id, children) {
+    const lists = Store.getData('lists')
+    const list = _.findWhere(lists, {
+      taskId: id
+    })
+    const index = lists.indexOf(list)
+
+    list.children = children
+    lists[index] = list
+    Store.update('lists', lists)
   }
 
   /**
@@ -283,16 +315,19 @@ export default class Store {
                      If no ParentId provided, new task is inserted into its direct parent's list
    * @return {void}
    */
-  spliceToList(task, appendTo, listParentId) {
-    const listChildren = this.getListChildren(listParentId || task.parentId)
+  static spliceToList(task, appendTo, listParentId = null) {
+    const listId = listParentId || task.parentId
+    const parentList = this.getListChildren(listId)
 
     if (appendTo) {
-      const taskIndex = listChildren.indexOf(appendTo) + 1
+      const taskIndex = parentList.indexOf(appendTo) + 1
 
-      listChildren.splice(taskIndex, 0, task.id)
+      parentList.splice(taskIndex, 0, task.id)
     } else {
-      listChildren.push(task.id)
+      parentList.push(task.id)
     }
+
+    this.setListChildren(listId, parentList)
   }
 
   /**
@@ -300,9 +335,10 @@ export default class Store {
    * @param {object} Task to be removed
    * @return {void}
    */
-  spliceFromList(task) {
+  static spliceFromList(task) {
     const listChildren = this.getListChildren(task.parentId)
 
     listChildren.splice(listChildren.indexOf(task.id), 1)
+    this.setListChildren(task.parentId, listChildren)
   }
 }

@@ -11,7 +11,8 @@ const Constants = {
   DIRECTIONS: {
     up: 'UP',
     down: 'DOWN'
-  }
+  },
+  ROOT_ID: 0
 }
 
 module.exports = Constants

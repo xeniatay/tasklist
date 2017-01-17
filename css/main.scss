@@ -5,13 +5,43 @@ body {
   font-size: 14px;
   font-family: "Trebuchet MS", "Helvetica", "Helvetica Neue", Arial, sans-serif;
   line-height: 1.8;
-  // background: black;
-  // color: #EFEFEF;
+}
+
+.buttons {
+  text-align: center;
+  margin: 25px;
+
+  button {
+    display: inline-block;
+    padding: 12px 20px;
+    margin: 0 10px;
+    border: none;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
+    outline: none;
+    position: relative;
+    background: #6FAF6F;
+    color: #FFFFFF;
+    box-shadow: 0 6px #3f3f3f;
+    border-radius: 5px;
+
+    &:hover {
+      box-shadow: 0 4px #3f3f3f;
+      top: 2px;
+    }
+
+    &:active {
+      box-shadow: 0 0 #3f3f3f;
+      top: 6px;
+    }
+  }
 }
 
 .app {
   padding: 20px 20px 20px 0;
-  min-height: 560px;
+  min-height: 500px;
   box-shadow: 0px 0px 9px rgba(0, 0, 0, 0.2);
 }
 
@@ -23,8 +53,7 @@ body {
     outline: 0;
 
     &:before {
-      // content: '•';
-      content: attr(data-id);
+      content: '•';
       display: inline;
       margin-right: 0.5em;
       margin-left: -1em;
@@ -34,4 +63,22 @@ body {
 
 .list {
   margin-left: 20px;
+}
+
+.debug {
+  button.debug {
+    background: #AF6F6F;
+  }
+
+  .task-input {
+    border-bottom: 1px solid #EFEFEF;
+
+    &:after {
+      content: attr(data-id);
+      position: absolute;
+      right: 0;
+      font-size: 0.8em;
+      color: red;
+    }
+  }
 }

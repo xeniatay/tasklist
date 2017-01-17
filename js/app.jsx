@@ -4,71 +4,73 @@ import ReactDOM from 'react-dom'
 import Constants from './constants.js'
 import Task from './task.jsx'
 import Actions from './actions.js'
-
-const ROOT_ID = _.uniqueId()
+import Store from './store.js'
 
 class App extends React.Component {
   constructor(props) {
     super(props)
 
-    this.actions = new Actions(ROOT_ID)
-
-    const data = this.actions.getData()
+    const data = Store.initialize()
     const task = _.findWhere(data.tasks, {
-      parentId: ROOT_ID
+      parentId: Constants.ROOT_ID
     })
 
     this.state = {
       data,
-      focus: task.id
+      focus: task.id,
+      debug: Store.getData('debug')
     }
   }
 
   render() {
     const list = _.findWhere(this.state.data.lists, {
-      taskId: ROOT_ID
+      taskId: Constants.ROOT_ID
     })
 
     return (
-      <div className='app'>
-        <button type='button' onClick={this.reset}>Reset Data</button>
-        <button type='button' onClick={this.toggleDebug}>Debug</button>
-        <Task
-          list={list}
-          data={this.state.data}
-          focus={this.state.focus}
-          insertTask={this.insertTask}
-          updateTask={this.updateTask}
-          indentTask={this.indentTask}
-          reverseIndentTask={this.reverseIndentTask}
-          navigateTask={this.navigateTask}
-          deleteTask={this.deleteTask}
-        />
+      <div className={this.state.debug ? 'debug' : ''}>
+        <div className='app'>
+          <Task
+            list={list}
+            data={this.state.data}
+            focus={this.state.focus}
+            insertTask={this.insertTask}
+            updateTask={this.updateTask}
+            indentTask={this.indentTask}
+            reverseIndentTask={this.reverseIndentTask}
+            navigateTask={this.navigateTask}
+            deleteTask={this.deleteTask}
+          />
+        </div>
+        <div className='buttons'>
+          <button type='button' className='clear' onClick={this.reset}>Clear</button>
+          <button type='button' className='debug' onClick={this.toggleDebug}>Debug mode</button>
+        </div>
       </div>
     )
   }
 
   insertTask = (task) => {
-    const newTaskId = this.actions.insertTask(task)
+    const newTaskId = Actions.insertTask(task)
 
     this.focusTask(newTaskId)
     this.updateData()
   }
 
   updateTask = (id, value) => {
-    this.actions.updateTask(id, value)
+    Actions.updateTask(id, value)
     this.updateData()
     this.focusTask(id)
   }
 
   indentTask = (task) => {
-    this.actions.indentTask(task)
+    Actions.indentTask(task)
     this.focusTask(task.id)
     this.updateData()
   }
 
   reverseIndentTask = (task) => {
-    this.actions.reverseIndentTask(task)
+    Actions.reverseIndentTask(task)
     this.updateData()
   }
 
@@ -76,9 +78,9 @@ class App extends React.Component {
     let id
 
     if (dir === Constants.DIRECTIONS.up) {
-      id = this.actions.getPrevTask(task)
+      id = Actions.getPrevTask(task)
     } else if (dir === Constants.DIRECTIONS.down) {
-      id = this.actions.getNextTask(task)
+      id = Actions.getNextTask(task)
     }
 
     this.focusTask(id)
@@ -92,18 +94,23 @@ class App extends React.Component {
 
   updateData() {
     this.setState({
-      data: this.actions.getData()
+      data: Store.getExposedData()
     })
   }
 
-  reset() {
-    localStorage.setItem('data', '')
+  reset = () => {
+    Store.resetData()
+    this.updateData()
   }
 
-  toggleDebug() {
-    let debug = localStorage.getItem('debug') && debug === 'true'
+  toggleDebug = () => {
+    const debug = Store.getData('debug')
 
-    localStorage.setItem('debug', !!!debug)
+    Store.update('debug', !debug)
+
+    this.setState({
+      debug: Store.getData('debug')
+    })
   }
 }
 
