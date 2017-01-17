@@ -1,10 +1,11 @@
 import _ from 'underscore'
 import React from 'react'
 import ReactDOM from 'react-dom'
-import Constants from './constants.js'
-import Task from './task.jsx'
 import Actions from './actions.js'
+import Constants from './constants.js'
+import Legend from './legend.jsx'
 import Store from './store.js'
+import Task from './task.jsx'
 
 class App extends React.Component {
   constructor(props) {
@@ -42,9 +43,10 @@ class App extends React.Component {
             deleteTask={this.deleteTask}
           />
         </div>
-        <div className='buttons'>
+        <div className='info'>
           <button type='button' className='clear' onClick={this.reset}>Clear</button>
           <button type='button' className='debug' onClick={this.toggleDebug}>Debug mode</button>
+          <Legend/>
         </div>
       </div>
     )

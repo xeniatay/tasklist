@@ -55,8 +55,6 @@ export default class Actions {
     this.addTask(newTask)
     this.spliceToList(newTask, appendTo.id)
 
-    console.log('insertTask', Store.lists, Store.tasks, newTask)
-
     return newTask.id
   }
 
@@ -102,8 +100,6 @@ export default class Actions {
       task = this.setParentId(task, newParentId)
       this.spliceToList(task)
     }
-
-    console.log('indent task', Store.lists, Store.tasks)
   }
 
   /**
@@ -251,8 +247,6 @@ export default class Actions {
 
     tasks[index].parentId = parentId
     Store.update('tasks', tasks)
-
-    console.log('parentid', tasks[index], parentId)
 
     return tasks[index]
   }
